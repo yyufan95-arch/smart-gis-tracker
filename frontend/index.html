@@ -3,16 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <title>印尼游客 A-B-C-D 认证追踪系统</title>
-    <!-- 引入地图样式库 -->
+    <!-- 1. 引入Leaflet地图库（必须放在最前面） -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- 2. 引入Google Maps底图插件（加载谷歌地图） -->
+    <script src="https://unpkg.com/leaflet.gridlayer.googlemutant@latest/dist/Leaflet.GoogleMutant.js"></script>
+
     <style>
-        /* CSS 样式直接写在这里，防止路径加载失败 */
+        /* 全局样式重置，保证地图撑满屏幕 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body, html {
             height: 100%;
-            margin: 0;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
+
+        /* 左侧任务面板 */
         #sidebar {
             width: 320px;
             height: 100vh;
@@ -22,100 +32,162 @@
             display: flex;
             flex-direction: column;
             padding: 20px;
-            box-sizing: border-box;
         }
+
+        /* 右侧地图容器（核心：绝对定位+100%宽高） */
         #map {
             flex: 1;
             height: 100vh;
-            background: #e5e3df; /* 地图加载前的底色 */
+            position: relative;
+            background: #e5e3df;
         }
-        h2 { color: #1a73e8; font-size: 20px; }
-        .task-box {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-        #step-list {
-            list-style: none;
-            padding: 0;
-        }
-        #step-list li {
+
+        /* 面板样式 */
+        .task-item {
             padding: 12px;
-            margin-bottom: 8px;
-            background: white;
+            margin: 8px 0;
+            border: 1px solid #e0e0e0;
             border-radius: 6px;
-            border: 1px solid #ddd;
-            color: #555;
+            cursor: pointer;
+            transition: all 0.2s;
         }
-        /* 任务完成后的样式 */
-        .completed {
-            border-left: 5px solid #34a853 !important;
-            color: #34a853 !important;
-            font-weight: bold;
+        .task-item.active {
+            border-color: #1a73e8;
+            background: #f1f8ff;
         }
-        button {
+        .btn {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             background: #1a73e8;
             color: white;
             border: none;
             border-radius: 6px;
-            cursor: pointer;
             font-size: 16px;
+            cursor: pointer;
+            margin-top: 16px;
         }
-        #log {
+        .log-box {
+            margin-top: 20px;
             flex: 1;
-            background: #202124;
-            color: #34a853;
-            padding: 10px;
-            font-size: 11px;
-            border-radius: 4px;
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 12px;
+            border-radius: 6px;
             overflow-y: auto;
-            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        h2 {
+            color: #1a73e8;
+            font-size: 20px;
+            margin-bottom: 16px;
         }
     </style>
 </head>
 <body>
-
+    <!-- 左侧任务面板 -->
     <div id="sidebar">
         <h2>印尼游客任务面板</h2>
-        <div class="task-box">
-            <p id="current-task">状态：准备开始认证</p>
-            <ul id="step-list">
-                <li id="li-A">A. 身份核验 (认证点)</li>
-                <li id="li-B">B. 文化活动 (参与点)</li>
-                <li id="li-C">C. 材料费结算 (支付点)</li>
-                <li id="li-D">D. 活动认证完成 (目标点)</li>
-            </ul>
-            <button id="certifyBtn" onclick="processCert()">点击执行当前认证</button>
-        </div>
-        <div style="flex:1; display:flex; flex-direction:column;">
-            <small>模拟数据库记录 (LocalStorage):</small>
-            <pre id="log">[]</pre>
-        </div>
+        <p>状态：<span id="status">准备开始认证</span></p>
+        
+        <div class="task-item" data-place="A">A. 身份核验 (认证点)</div>
+        <div class="task-item" data-place="B">B. 文化活动 (参与点)</div>
+        <div class="task-item" data-place="C">C. 材料费结算 (支付点)</div>
+        <div class="task-item" data-place="D">D. 活动认证完成 (目标点)</div>
+
+        <button class="btn" id="authBtn">点击执行当前认证</button>
+
+        <p style="margin-top: 20px; font-size: 14px;">模拟数据库记录 (LocalStorage):</p>
+        <div class="log-box" id="logBox"></div>
     </div>
 
-    <!-- 地图容器 -->
+    <!-- 右侧地图容器 -->
     <div id="map"></div>
 
-    <!-- 依次引入地图 JS 库 -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
     <script>
-        // --- 1. 地图初始化脚本 ---
-        let map;
-        const pathCoords = [
-            [35.830, 127.120], // A
-            [35.815, 127.140], // B
-            [35.845, 127.155], // C
-            [35.825, 127.135]  // D
-        ];
+        // ====================== 核心：地图初始化（必须放在DOM加载后）======================
+        // 等待页面完全加载后再初始化地图
+        document.addEventListener('DOMContentLoaded', function() {
+            // 1. 初始化Leaflet地图，设置初始中心点（印尼雅加达，适配你的项目）
+            const map = L.map('map', {
+                center: [-6.2088, 106.8456], // 雅加达坐标
+                zoom: 12,
+                zoomControl: true
+            });
 
-        function initMap() {
-            console.log("正在初始化地图...");
-            // 创建地图并居中到 A 点
-            map = L.map('map').setView(pathCoords[0], 13);
+            // 2. 加载Google Maps底图（关键：让地图显示出来）
+            L.gridLayer.googleMutant({
+                type: 'roadmap' //  roadmap=普通地图，satellite=卫星图
+            }).addTo(map);
 
-            // 加载底图瓦片 (不需要 API Key)
-            L
+            // 3. 添加A/B/C/D四个认证点标记
+            const places = {
+                A: { name: "A-身份核验点", lat: -6.2088, lng: 106.8456 },
+                B: { name: "B-文化活动点", lat: -6.2100, lng: 106.8500 },
+                C: { name: "C-支付结算点", lat: -6.2050, lng: 106.8400 },
+                D: { name: "D-终点认证点", lat: -6.2120, lng: 106.8350 }
+            };
+
+            // 遍历添加标记
+            Object.keys(places).forEach(key => {
+                const p = places[key];
+                const marker = L.marker([p.lat, p.lng]).addTo(map);
+                marker.bindPopup(`<b>${p.name}</b>`);
+            });
+
+            // ====================== 左侧面板交互逻辑 ======================
+            const statusEl = document.getElementById('status');
+            const authBtn = document.getElementById('authBtn');
+            const logBox = document.getElementById('logBox');
+            const taskItems = document.querySelectorAll('.task-item');
+            let currentStep = 0;
+
+            // 初始化日志
+            function updateLog() {
+                const records = JSON.parse(localStorage.getItem('tourRecords') || '[]');
+                logBox.innerHTML = records.map(r => 
+                    `<p>[${r.time}] ${r.place}: ${r.status}</p>`
+                ).join('');
+            }
+
+            // 认证按钮点击事件
+            authBtn.addEventListener('click', function() {
+                const placeKey = Object.keys(places)[currentStep];
+                const place = places[placeKey];
+                
+                // 模拟认证成功
+                const record = {
+                    time: new Date().toLocaleString(),
+                    place: placeKey,
+                    status: "认证成功",
+                    lat: place.lat,
+                    lng: place.lng
+                };
+
+                // 保存到LocalStorage（模拟数据库）
+                const records = JSON.parse(localStorage.getItem('tourRecords') || '[]');
+                records.push(record);
+                localStorage.setItem('tourRecords', JSON.stringify(records));
+
+                // 更新UI
+                taskItems[currentStep].classList.add('active');
+                currentStep++;
+                if(currentStep < taskItems.length) {
+                    statusEl.textContent = `当前认证：${Object.keys(places)[currentStep]}`;
+                    // 地图跳转到下一个点
+                    map.setView([places[Object.keys(places)[currentStep]].lat, 
+                                places[Object.keys(places)[currentStep]].lng], 15);
+                } else {
+                    statusEl.textContent = "全部认证完成！";
+                    authBtn.disabled = true;
+                    authBtn.textContent = "认证全部完成";
+                }
+
+                updateLog();
+            });
+
+            // 初始化日志
+            updateLog();
+        });
+    </script>
+</body>
+</html>
