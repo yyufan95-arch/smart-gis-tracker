@@ -3,34 +3,119 @@
 <head>
     <meta charset="UTF-8">
     <title>印尼游客 A-B-C-D 认证追踪系统</title>
-    <!-- 引入 Leaflet 样式 -->
+    <!-- 引入地图样式库 -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="css/style.css">
+    <style>
+        /* CSS 样式直接写在这里，防止路径加载失败 */
+        body, html {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        #sidebar {
+            width: 320px;
+            height: 100vh;
+            background: #ffffff;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        #map {
+            flex: 1;
+            height: 100vh;
+            background: #e5e3df; /* 地图加载前的底色 */
+        }
+        h2 { color: #1a73e8; font-size: 20px; }
+        .task-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        #step-list {
+            list-style: none;
+            padding: 0;
+        }
+        #step-list li {
+            padding: 12px;
+            margin-bottom: 8px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+            color: #555;
+        }
+        /* 任务完成后的样式 */
+        .completed {
+            border-left: 5px solid #34a853 !important;
+            color: #34a853 !important;
+            font-weight: bold;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #log {
+            flex: 1;
+            background: #202124;
+            color: #34a853;
+            padding: 10px;
+            font-size: 11px;
+            border-radius: 4px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+    </style>
 </head>
 <body>
+
     <div id="sidebar">
         <h2>印尼游客任务面板</h2>
         <div class="task-box">
-            <p id="current-task">当前状态：准备开始认证</p>
+            <p id="current-task">状态：准备开始认证</p>
             <ul id="step-list">
                 <li id="li-A">A. 身份核验 (认证点)</li>
                 <li id="li-B">B. 文化活动 (参与点)</li>
                 <li id="li-C">C. 材料费结算 (支付点)</li>
                 <li id="li-D">D. 活动认证完成 (目标点)</li>
             </ul>
-            <button id="certifyBtn" onclick="processCert()">执行当前认证</button>
+            <button id="certifyBtn" onclick="processCert()">点击执行当前认证</button>
         </div>
-        <div class="db-section">
-            <h4>数据库实时记录 (LocalStorage):</h4>
+        <div style="flex:1; display:flex; flex-direction:column;">
+            <small>模拟数据库记录 (LocalStorage):</small>
             <pre id="log">[]</pre>
         </div>
     </div>
 
+    <!-- 地图容器 -->
     <div id="map"></div>
 
-    <!-- 引入 Leaflet JS -->
+    <!-- 依次引入地图 JS 库 -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="js/logic.js"></script>
-    <script src="js/map.js"></script>
-</body>
-</html>
+    
+    <script>
+        // --- 1. 地图初始化脚本 ---
+        let map;
+        const pathCoords = [
+            [35.830, 127.120], // A
+            [35.815, 127.140], // B
+            [35.845, 127.155], // C
+            [35.825, 127.135]  // D
+        ];
+
+        function initMap() {
+            console.log("正在初始化地图...");
+            // 创建地图并居中到 A 点
+            map = L.map('map').setView(pathCoords[0], 13);
+
+            // 加载底图瓦片 (不需要 API Key)
+            L
