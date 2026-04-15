@@ -3,41 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <title>印尼游客 A-B-C-D 认证追踪系统</title>
-    <!-- 1. 引入Leaflet地图库（国内可直接加载） -->
+    <!-- 引入Leaflet地图库 -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
+        /* 全局重置，强制页面撑满 */
         * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
         }
-        body, html {
-            height: 100%;
+        html, body {
+            height: 100vh !important;
+            width: 100vw !important;
+            overflow: hidden;
             font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-            display: flex;
         }
 
-        /* 左侧任务面板 */
+        /* 左侧面板：固定宽度，绝对定位 */
         #sidebar {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 320px;
             height: 100vh;
             background: #ffffff;
             box-shadow: 2px 0 10px rgba(0,0,0,0.1);
             z-index: 1000;
+            padding: 20px;
             display: flex;
             flex-direction: column;
-            padding: 20px;
         }
 
-        /* 右侧地图容器（核心：必须100vh+flex:1） */
+        /* 右侧地图：绝对定位，撑满剩余空间（核心修复） */
         #map {
-            flex: 1;
-            height: 100vh;
-            position: relative;
+            position: absolute;
+            top: 0;
+            left: 320px;
+            right: 0;
+            bottom: 0;
             background: #e5e3df;
-            min-height: 100vh;
+            z-index: 1;
         }
 
         /* 面板样式 */
@@ -112,22 +119,23 @@
     <div id="map"></div>
 
     <script>
-        // 等待页面完全加载后再初始化地图（关键！）
-        document.addEventListener('DOMContentLoaded', function() {
+        // 页面完全加载后，强制初始化地图
+        window.onload = function() {
+            console.log("地图初始化开始..."); // 控制台可看到，确认代码执行
+            
             // 1. 初始化Leaflet地图，印尼雅加达中心点
             const map = L.map('map', {
-                center: [-6.2088, 106.8456], // 雅加达坐标
+                center: [-6.2088, 106.8456],
                 zoom: 13,
-                zoomControl: true,
-                attributionControl: true
+                zoomControl: true
             });
 
-            // 2. 加载开源OpenStreetMap底图（国内秒加载，无需谷歌）
+            // 2. 加载开源OpenStreetMap底图（国内秒加载）
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }).addTo(map);
 
-            // 3. 定义A/B/C/D四个认证点坐标（雅加达周边，可自行修改）
+            // 3. 定义A/B/C/D四个认证点
             const places = {
                 A: { name: "A-身份核验点", lat: -6.2088, lng: 106.8456 },
                 B: { name: "B-文化活动点", lat: -6.2100, lng: 106.8500 },
@@ -135,7 +143,7 @@
                 D: { name: "D-终点认证点", lat: -6.2120, lng: 106.8350 }
             };
 
-            // 4. 给每个点添加标记
+            // 4. 添加标记
             const markers = {};
             Object.keys(places).forEach(key => {
                 const p = places[key];
@@ -143,7 +151,7 @@
                 markers[key].bindPopup(`<b>${p.name}</b>`);
             });
 
-            // ====================== 左侧面板交互逻辑 ======================
+            // 面板交互逻辑
             const statusEl = document.getElementById('status');
             const authBtn = document.getElementById('authBtn');
             const logBox = document.getElementById('logBox');
@@ -159,14 +167,13 @@
                 ).join('');
             }
 
-            // 认证按钮点击事件
+            // 认证按钮
             authBtn.addEventListener('click', function() {
                 if (currentStep >= steps.length) return;
-
                 const placeKey = steps[currentStep];
                 const place = places[placeKey];
                 
-                // 模拟认证成功
+                // 保存记录
                 const record = {
                     time: new Date().toLocaleString(),
                     place: placeKey,
@@ -174,20 +181,15 @@
                     lat: place.lat,
                     lng: place.lng
                 };
-
-                // 保存到LocalStorage（模拟数据库）
                 const records = JSON.parse(localStorage.getItem('tourRecords') || '[]');
                 records.push(record);
                 localStorage.setItem('tourRecords', JSON.stringify(records));
 
-                // 更新UI：标记当前步骤为已完成
+                // 更新UI
                 taskItems[currentStep].classList.add('active');
-                // 地图跳转到当前认证点
                 map.setView([place.lat, place.lng], 16);
-                // 打开标记弹窗
                 markers[placeKey].openPopup();
 
-                // 下一步
                 currentStep++;
                 if(currentStep < steps.length) {
                     statusEl.textContent = `当前认证：${steps[currentStep]}`;
@@ -196,18 +198,12 @@
                     authBtn.disabled = true;
                     authBtn.textContent = "认证全部完成";
                 }
-
                 updateLog();
             });
 
-            // 初始化日志
             updateLog();
-
-            // 强制地图重绘（解决容器渲染问题）
-            setTimeout(() => {
-                map.invalidateSize();
-            }, 100);
-        });
+            console.log("地图初始化完成！"); // 控制台确认
+        }
     </script>
 </body>
 </html>
