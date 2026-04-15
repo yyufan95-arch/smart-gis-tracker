@@ -1,1 +1,53 @@
+/* 必须给高度，地图才会显示 */
+body, html {
+    height: 100%;
+    margin: 0;
+    display: flex; /* 使用 flex 布局让菜单和地图并排 */
+}
 
+#sidebar {
+    width: 300px;
+    height: 100vh;
+    padding: 20px;
+    background: #f8f9fa;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+    z-index: 10;
+    overflow-y: auto;
+}
+
+#map {
+    flex: 1;      /* 地图占据剩余所有空间 */
+    height: 100vh; /* 地图必须有明确的高度 */
+    background: #e5e3df; /* 地图没出来前的底色 */
+}
+
+.task-box {
+    margin-top: 20px;
+}
+
+#step-list {
+    list-style: none;
+    padding: 0;
+}
+
+#step-list li {
+    padding: 10px;
+    margin-bottom: 5px;
+    background: white;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+}
+
+#step-list li.active {
+    border-left: 5px solid #1a73e8;
+    font-weight: bold;
+}
+
+#log {
+    background: #333;
+    color: #00ff00;
+    padding: 10px;
+    font-size: 12px;
+    border-radius: 4px;
+    white-space: pre-wrap;
+}
