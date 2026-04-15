@@ -1,33 +1,36 @@
-let map;
-const pathCoords = [
-    [35.830, 127.120], // A
-    [35.815, 127.140], // B
-    [35.845, 127.155], // C
-    [35.825, 127.135]  // D
-];
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>印尼游客 A-B-C-D 认证追踪系统</title>
+    <!-- 引入 Leaflet 样式 -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="sidebar">
+        <h2>印尼游客任务面板</h2>
+        <div class="task-box">
+            <p id="current-task">当前状态：准备开始认证</p>
+            <ul id="step-list">
+                <li id="li-A">A. 身份核验 (认证点)</li>
+                <li id="li-B">B. 文化活动 (参与点)</li>
+                <li id="li-C">C. 材料费结算 (支付点)</li>
+                <li id="li-D">D. 活动认证完成 (目标点)</li>
+            </ul>
+            <button id="certifyBtn" onclick="processCert()">执行当前认证</button>
+        </div>
+        <div class="db-section">
+            <h4>数据库实时记录 (LocalStorage):</h4>
+            <pre id="log">[]</pre>
+        </div>
+    </div>
 
-function initMap() {
-    console.log("正在使用 Leaflet 初始化地图...");
-    
-    // 1. 初始化地图并设置中心点
-    map = L.map('map').setView(pathCoords[0], 13);
+    <div id="map"></div>
 
-    // 2. 加载地图瓦片 (OpenStreetMap 开源底图，不需要 Key)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
-
-    // 3. 画红色连线
-    L.polyline(pathCoords, {color: 'red', weight: 3}).addTo(map);
-
-    // 4. 打点 A, B, C, D
-    const labels = ['A', 'B', 'C', 'D'];
-    pathCoords.forEach((coord, index) => {
-        L.marker(coord).addTo(map)
-            .bindPopup("位置: " + labels[index])
-            .bindTooltip(labels[index], {permanent: true, direction: 'right'});
-    });
-}
-
-// 页面加载后立即启动地图
-window.addEventListener('DOMContentLoaded', initMap);
+    <!-- 引入 Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="js/logic.js"></script>
+    <script src="js/map.js"></script>
+</body>
+</html>
