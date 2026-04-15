@@ -3,14 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <title>印尼游客 A-B-C-D 认证追踪系统</title>
-    <!-- 1. 引入Leaflet地图库（必须放在最前面） -->
+    <!-- 1. 引入Leaflet地图库（国内可直接加载） -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <!-- 2. 引入Google Maps底图插件（加载谷歌地图） -->
-    <script src="https://unpkg.com/leaflet.gridlayer.googlemutant@latest/dist/Leaflet.GoogleMutant.js"></script>
 
     <style>
-        /* 全局样式重置，保证地图撑满屏幕 */
         * {
             margin: 0;
             padding: 0;
@@ -34,12 +31,13 @@
             padding: 20px;
         }
 
-        /* 右侧地图容器（核心：绝对定位+100%宽高） */
+        /* 右侧地图容器（核心：必须100vh+flex:1） */
         #map {
             flex: 1;
             height: 100vh;
             position: relative;
             background: #e5e3df;
+            min-height: 100vh;
         }
 
         /* 面板样式 */
@@ -53,7 +51,7 @@
         }
         .task-item.active {
             border-color: #1a73e8;
-            background: #f1f8ff;
+            background: #e3f2fd;
         }
         .btn {
             width: 100%;
@@ -66,6 +64,10 @@
             cursor: pointer;
             margin-top: 16px;
         }
+        .btn:disabled {
+            background: #90caf9;
+            cursor: not-allowed;
+        }
         .log-box {
             margin-top: 20px;
             flex: 1;
@@ -75,11 +77,17 @@
             border-radius: 6px;
             overflow-y: auto;
             font-family: monospace;
+            font-size: 12px;
         }
         h2 {
             color: #1a73e8;
             font-size: 20px;
             margin-bottom: 16px;
+        }
+        .status-text {
+            font-size: 16px;
+            margin-bottom: 16px;
+            font-weight: 500;
         }
     </style>
 </head>
@@ -87,7 +95,7 @@
     <!-- 左侧任务面板 -->
     <div id="sidebar">
         <h2>印尼游客任务面板</h2>
-        <p>状态：<span id="status">准备开始认证</span></p>
+        <p class="status-text">状态：<span id="status">准备开始认证</span></p>
         
         <div class="task-item" data-place="A">A. 身份核验 (认证点)</div>
         <div class="task-item" data-place="B">B. 文化活动 (参与点)</div>
@@ -104,22 +112,22 @@
     <div id="map"></div>
 
     <script>
-        // ====================== 核心：地图初始化（必须放在DOM加载后）======================
-        // 等待页面完全加载后再初始化地图
+        // 等待页面完全加载后再初始化地图（关键！）
         document.addEventListener('DOMContentLoaded', function() {
-            // 1. 初始化Leaflet地图，设置初始中心点（印尼雅加达，适配你的项目）
+            // 1. 初始化Leaflet地图，印尼雅加达中心点
             const map = L.map('map', {
                 center: [-6.2088, 106.8456], // 雅加达坐标
-                zoom: 12,
-                zoomControl: true
+                zoom: 13,
+                zoomControl: true,
+                attributionControl: true
             });
 
-            // 2. 加载Google Maps底图（关键：让地图显示出来）
-            L.gridLayer.googleMutant({
-                type: 'roadmap' //  roadmap=普通地图，satellite=卫星图
+            // 2. 加载开源OpenStreetMap底图（国内秒加载，无需谷歌）
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             }).addTo(map);
 
-            // 3. 添加A/B/C/D四个认证点标记
+            // 3. 定义A/B/C/D四个认证点坐标（雅加达周边，可自行修改）
             const places = {
                 A: { name: "A-身份核验点", lat: -6.2088, lng: 106.8456 },
                 B: { name: "B-文化活动点", lat: -6.2100, lng: 106.8500 },
@@ -127,11 +135,12 @@
                 D: { name: "D-终点认证点", lat: -6.2120, lng: 106.8350 }
             };
 
-            // 遍历添加标记
+            // 4. 给每个点添加标记
+            const markers = {};
             Object.keys(places).forEach(key => {
                 const p = places[key];
-                const marker = L.marker([p.lat, p.lng]).addTo(map);
-                marker.bindPopup(`<b>${p.name}</b>`);
+                markers[key] = L.marker([p.lat, p.lng]).addTo(map);
+                markers[key].bindPopup(`<b>${p.name}</b>`);
             });
 
             // ====================== 左侧面板交互逻辑 ======================
@@ -140,6 +149,7 @@
             const logBox = document.getElementById('logBox');
             const taskItems = document.querySelectorAll('.task-item');
             let currentStep = 0;
+            const steps = Object.keys(places);
 
             // 初始化日志
             function updateLog() {
@@ -151,7 +161,9 @@
 
             // 认证按钮点击事件
             authBtn.addEventListener('click', function() {
-                const placeKey = Object.keys(places)[currentStep];
+                if (currentStep >= steps.length) return;
+
+                const placeKey = steps[currentStep];
                 const place = places[placeKey];
                 
                 // 模拟认证成功
@@ -168,14 +180,17 @@
                 records.push(record);
                 localStorage.setItem('tourRecords', JSON.stringify(records));
 
-                // 更新UI
+                // 更新UI：标记当前步骤为已完成
                 taskItems[currentStep].classList.add('active');
+                // 地图跳转到当前认证点
+                map.setView([place.lat, place.lng], 16);
+                // 打开标记弹窗
+                markers[placeKey].openPopup();
+
+                // 下一步
                 currentStep++;
-                if(currentStep < taskItems.length) {
-                    statusEl.textContent = `当前认证：${Object.keys(places)[currentStep]}`;
-                    // 地图跳转到下一个点
-                    map.setView([places[Object.keys(places)[currentStep]].lat, 
-                                places[Object.keys(places)[currentStep]].lng], 15);
+                if(currentStep < steps.length) {
+                    statusEl.textContent = `当前认证：${steps[currentStep]}`;
                 } else {
                     statusEl.textContent = "全部认证完成！";
                     authBtn.disabled = true;
@@ -187,6 +202,11 @@
 
             // 初始化日志
             updateLog();
+
+            // 强制地图重绘（解决容器渲染问题）
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 100);
         });
     </script>
 </body>
