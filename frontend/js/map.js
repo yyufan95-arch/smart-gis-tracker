@@ -1,40 +1,33 @@
 let map;
-// 设定 A, B, C, D 的经纬度 (以全州市附近为例)
 const pathCoords = [
-    { id: 'A', lat: 35.830, lng: 127.120 },
-    { id: 'B', lat: 35.815, lng: 127.140 },
-    { id: 'C', lat: 35.845, lng: 127.155 },
-    { id: 'D', lat: 35.825, lng: 127.135 }
+    [35.830, 127.120], // A
+    [35.815, 127.140], // B
+    [35.845, 127.155], // C
+    [35.825, 127.135]  // D
 ];
 
 function initMap() {
-    console.log("正在初始化地图...");
+    console.log("正在使用 Leaflet 初始化地图...");
     
-    // 1. 创建地图
-    map = new google.maps.Map(document.getElementById("map"), {
-        zoom: 13,
-        center: pathCoords[0],
-        mapTypeControl: true,
-        streetViewControl: false
-    });
+    // 1. 初始化地图并设置中心点
+    map = L.map('map').setView(pathCoords[0], 13);
 
-    // 2. 绘制红色连线
-    const tourPath = new google.maps.Polyline({
-        path: pathCoords,
-        geodesic: true,
-        strokeColor: "#FF0000",
-        strokeOpacity: 1.0,
-        strokeWeight: 3,
-        map: map
-    });
+    // 2. 加载地图瓦片 (OpenStreetMap 开源底图，不需要 Key)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
 
-    // 3. 放置 A, B, C, D 标记
-    pathCoords.forEach(point => {
-        new google.maps.Marker({
-            position: { lat: point.lat, lng: point.lng },
-            map: map,
-            label: point.id,
-            title: "位置: " + point.id
-        });
+    // 3. 画红色连线
+    L.polyline(pathCoords, {color: 'red', weight: 3}).addTo(map);
+
+    // 4. 打点 A, B, C, D
+    const labels = ['A', 'B', 'C', 'D'];
+    pathCoords.forEach((coord, index) => {
+        L.marker(coord).addTo(map)
+            .bindPopup("位置: " + labels[index])
+            .bindTooltip(labels[index], {permanent: true, direction: 'right'});
     });
 }
+
+// 页面加载后立即启动地图
+window.addEventListener('DOMContentLoaded', initMap);
