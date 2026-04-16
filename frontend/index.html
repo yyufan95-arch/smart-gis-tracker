@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <title>Smart Tour GIS 印尼游客追踪系统</title>
-    <!-- 引入Leaflet地图库 -->
+    <!-- 1. 强制引入Leaflet，放在最顶部 -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
+        /* 2. 全局强制重置，100%保证样式生效 */
         * {
             margin: 0 !important;
             padding: 0 !important;
@@ -16,84 +17,87 @@
         html, body {
             height: 100vh !important;
             width: 100vw !important;
-            overflow: hidden;
+            overflow: hidden !important;
             font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f0f0 !important;
         }
 
-        /* 左侧面板：固定定位 */
+        /* 3. 左侧面板：绝对定位，固定宽度 */
         #sidebar {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 320px;
-            height: 100vh;
-            background: #ffffff;
-            border-right: 2px solid #e0e0e0;
-            z-index: 1000;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 320px !important;
+            height: 100vh !important;
+            background: #ffffff !important;
+            border-right: 2px solid #e0e0e0 !important;
+            z-index: 1000 !important;
+            padding: 20px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 12px !important;
         }
 
-        /* 右侧地图：绝对定位，撑满剩余空间（核心修复） */
+        /* 4. 右侧地图：绝对定位，撑满剩余空间（核心修复） */
         #map {
-            position: absolute;
-            top: 0;
-            left: 320px;
-            right: 0;
-            bottom: 0;
-            background: #f5f5f5;
-            z-index: 1;
+            position: absolute !important;
+            top: 0 !important;
+            left: 320px !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            background: #e5e3df !important;
+            z-index: 1 !important;
+            min-height: 100vh !important;
+            min-width: calc(100vw - 320px) !important;
         }
 
         /* 面板样式 */
         .task-item {
-            padding: 14px;
-            border: 1px solid #e0e0e0;
-            border-radius: 6px;
-            background: #fff;
-            font-size: 15px;
+            padding: 14px !important;
+            border: 1px solid #e0e0e0 !important;
+            border-radius: 6px !important;
+            background: #fff !important;
+            font-size: 15px !important;
         }
         .task-item.active {
-            border-color: #1a73e8;
-            background: #e3f2fd;
+            border-color: #1a73e8 !important;
+            background: #e3f2fd !important;
         }
         .btn {
-            width: 100%;
-            padding: 14px;
-            background: #1a73e8;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 16px;
-            cursor: pointer;
-            margin-top: 8px;
+            width: 100% !important;
+            padding: 14px !important;
+            background: #1a73e8 !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 6px !important;
+            font-size: 16px !important;
+            cursor: pointer !important;
+            margin-top: 8px !important;
         }
         .btn:disabled {
-            background: #90caf9;
-            cursor: not-allowed;
+            background: #90caf9 !important;
+            cursor: not-allowed !important;
         }
         .log-box {
-            margin-top: 12px;
-            flex: 1;
-            background: #1e1e1e;
-            color: #00ff00;
-            padding: 12px;
-            border-radius: 6px;
-            overflow-y: auto;
-            font-family: monospace;
-            font-size: 12px;
+            margin-top: 12px !important;
+            flex: 1 !important;
+            background: #1e1e1e !important;
+            color: #00ff00 !important;
+            padding: 12px !important;
+            border-radius: 6px !important;
+            overflow-y: auto !important;
+            font-family: monospace !important;
+            font-size: 12px !important;
         }
         h1 {
-            color: #1a73e8;
-            font-size: 24px;
-            margin-bottom: 8px;
+            color: #1a73e8 !important;
+            font-size: 24px !important;
+            margin-bottom: 8px !important;
         }
         .info-text {
-            font-size: 13px;
-            color: #666;
-            line-height: 1.5;
+            font-size: 13px !important;
+            color: #666 !important;
+            line-height: 1.5 !important;
         }
     </style>
 </head>
@@ -121,10 +125,11 @@
     <div id="map"></div>
 
     <script>
-        window.onload = function() {
-            console.log("地图初始化开始...");
+        // 5. 强制页面完全加载后再执行地图代码
+        window.addEventListener('load', function() {
+            console.log("=== 地图初始化开始 ===");
 
-            // 1. 初始化Leaflet地图（雅加达中心点）
+            // 6. 初始化Leaflet地图（雅加达中心点）
             const map = L.map('map', {
                 center: [-6.2088, 106.8456],
                 zoom: 13,
@@ -132,13 +137,15 @@
                 attributionControl: true
             });
 
-            // 2. 加载国内可直接访问的天地图底图（核心修复，彻底解决网络问题）
-            L.tileLayer('https://t{s}.tianditu.gov.cn/DataServer?T=vec_w&x={x}&y={y}&l={z}&tk=1a5be7e6464646464646464646464646', {
-                subdomains: ['0', '1', '2', '3', '4', '5', '6', '7'],
-                attribution: '&copy; 天地图'
+            // 7. 【核心修复】强制加载OpenStreetMap底图（国内可直接访问）
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                maxZoom: 19
             }).addTo(map);
 
-            // 3. 定义A/B/C/D四个认证点（雅加达真实坐标）
+            console.log("=== 底图加载完成 ===");
+
+            // 8. 定义A/B/C/D四个认证点（雅加达真实坐标）
             const points = {
                 A: { name: "A-身份认证点", lat: -6.2088, lng: 106.8456 },
                 B: { name: "B-文化体验点", lat: -6.2100, lng: 106.8500 },
@@ -146,29 +153,24 @@
                 D: { name: "D-终点达成点", lat: -6.2120, lng: 106.8350 }
             };
 
-            // 4. 添加标记和轨迹线
+            // 9. 添加标记和轨迹线
             const markers = {};
             const latlngs = [];
             Object.keys(points).forEach(key => {
                 const p = points[key];
                 latlngs.push([p.lat, p.lng]);
-                markers[key] = L.marker([p.lat, p.lng], {
-                    icon: L.icon({
-                        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-                        iconSize: [25, 41],
-                        iconAnchor: [12, 41]
-                    })
-                }).addTo(map).bindPopup(`<b>${p.name}</b>`);
+                markers[key] = L.marker([p.lat, p.lng]).addTo(map);
+                markers[key].bindPopup(`<b>${p.name}</b>`);
             });
 
             // 绘制A→B→C→D红色轨迹线
-            const polyline = L.polyline(latlngs, {
+            L.polyline(latlngs, {
                 color: 'red',
                 weight: 3,
                 opacity: 0.8
             }).addTo(map);
 
-            // 5. 面板交互逻辑
+            // 10. 面板交互逻辑
             const authBtn = document.getElementById('authBtn');
             const logBox = document.getElementById('logBox');
             const taskItems = document.querySelectorAll('.task-item');
@@ -229,12 +231,12 @@
                 authBtn.disabled = true;
             }
 
-            // 强制地图重绘，解决容器渲染问题
+            // 11. 强制地图重绘，解决容器渲染问题
             setTimeout(() => {
                 map.invalidateSize();
-                console.log("地图初始化完成！");
-            }, 200);
-        }
+                console.log("=== 地图初始化完成 ===");
+            }, 300);
+        });
     </script>
 </body>
 </html>
