@@ -3,239 +3,223 @@
 <head>
     <meta charset="UTF-8">
     <title>Smart Tour GIS 印尼游客追踪系统</title>
-    <!-- 1. 强制引入Leaflet，放在最顶部 -->
+    <!-- 1. 引入 Leaflet 样式和脚本 -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
-        /* 2. 全局强制重置，100%保证样式生效 */
+        /* 2. 基础布局重置 */
         * {
-            margin: 0 !important;
-            padding: 0 !important;
-            box-sizing: border-box !important;
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
         html, body {
-            height: 100vh !important;
-            width: 100vw !important;
-            overflow: hidden !important;
+            height: 100vh;
+            width: 100vw;
+            overflow: hidden;
             font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-            background: #f0f0f0 !important;
+            background: #f0f0f0;
         }
 
-        /* 3. 左侧面板：绝对定位，固定宽度 */
+        /* 3. 左侧面板：固定宽度 */
         #sidebar {
-            position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 320px !important;
-            height: 100vh !important;
-            background: #ffffff !important;
-            border-right: 2px solid #e0e0e0 !important;
-            z-index: 1000 !important;
-            padding: 20px !important;
-            display: flex !important;
-            flex-direction: column !important;
-            gap: 12px !important;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 320px;
+            height: 100vh;
+            background: #ffffff;
+            border-right: 2px solid #e0e0e0;
+            z-index: 1000;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
         }
 
-        /* 4. 右侧地图：绝对定位，撑满剩余空间（核心修复） */
+        /* 4. 右侧地图：占据剩余空间 */
         #map {
-            position: absolute !important;
-            top: 0 !important;
-            left: 320px !important;
-            right: 0 !important;
-            bottom: 0 !important;
-            background: #e5e3df !important;
-            z-index: 1 !important;
-            min-height: 100vh !important;
-            min-width: calc(100vw - 320px) !important;
+            position: absolute;
+            top: 0;
+            left: 320px;
+            right: 0;
+            bottom: 0;
+            background: #e5e3df; /* 地图加载前的背景色 */
+            z-index: 1;
         }
 
-        /* 面板样式 */
+        /* 装饰样式 */
+        h1 { color: #1a73e8; font-size: 24px; margin-bottom: 4px; }
+        .info-text { font-size: 13px; color: #666; line-height: 1.6; margin-bottom: 10px; }
+        
         .task-item {
-            padding: 14px !important;
-            border: 1px solid #e0e0e0 !important;
-            border-radius: 6px !important;
-            background: #fff !important;
-            font-size: 15px !important;
+            padding: 14px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            background: #fff;
+            font-size: 14px;
+            transition: all 0.3s;
         }
         .task-item.active {
-            border-color: #1a73e8 !important;
-            background: #e3f2fd !important;
+            border-left: 5px solid #34a853;
+            background: #f0fff4;
+            color: #2e7d32;
+            font-weight: bold;
         }
+
         .btn {
-            width: 100% !important;
-            padding: 14px !important;
-            background: #1a73e8 !important;
-            color: white !important;
-            border: none !important;
-            border-radius: 6px !important;
-            font-size: 16px !important;
-            cursor: pointer !important;
-            margin-top: 8px !important;
+            width: 100%;
+            padding: 14px;
+            background: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
         }
-        .btn:disabled {
-            background: #90caf9 !important;
-            cursor: not-allowed !important;
-        }
+        .btn:hover { background: #1557b0; }
+        .btn:disabled { background: #ccc; cursor: not-allowed; }
+
         .log-box {
-            margin-top: 12px !important;
-            flex: 1 !important;
-            background: #1e1e1e !important;
-            color: #00ff00 !important;
-            padding: 12px !important;
-            border-radius: 6px !important;
-            overflow-y: auto !important;
-            font-family: monospace !important;
-            font-size: 12px !important;
+            flex: 1;
+            background: #1e1e1e;
+            color: #34a853;
+            padding: 12px;
+            border-radius: 6px;
+            overflow-y: auto;
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            margin-top: 10px;
+            border: 1px solid #333;
         }
-        h1 {
-            color: #1a73e8 !important;
-            font-size: 24px !important;
-            margin-bottom: 8px !important;
-        }
-        .info-text {
-            font-size: 13px !important;
-            color: #666 !important;
-            line-height: 1.5 !important;
-        }
+        .log-entry { border-bottom: 1px solid #333; padding: 4px 0; }
     </style>
 </head>
 <body>
-    <!-- 左侧任务面板 -->
+
     <div id="sidebar">
         <h1>Smart Tour GIS</h1>
         <div class="info-text">
-            游客组: 印尼团 (20人)<br>
-            坐标系: WGS84 (雅加达)
+            <b>任务对象:</b> 印尼团 (20人)<br>
+            <b>坐标系统:</b> WGS84 (Jakarta)
         </div>
 
-        <div class="task-item" data-step="A">Step A. 身份认证签到</div>
-        <div class="task-item" data-step="B">Step B. 文化体验参与</div>
-        <div class="task-item" data-step="C">Step C. 费用结算完成</div>
-        <div class="task-item" data-step="D">Step D. 全程任务达成</div>
+        <div class="task-item" id="step-A">Step A. 身份认证签到</div>
+        <div class="task-item" id="step-B">Step B. 文化体验参与</div>
+        <div class="task-item" id="step-C">Step C. 费用结算完成</div>
+        <div class="task-item" id="step-D">Step D. 全程任务达成</div>
 
-        <button class="btn" id="authBtn">执行当前位置认证</button>
+        <button class="btn" id="authBtn">执行 A 位置认证</button>
 
-        <p style="margin-top: 8px; font-size: 13px;">实时模拟数据库 (JSON):</p>
+        <p style="margin-top: 10px; font-size: 12px; font-weight: bold; color: #444;">实时数据库模拟 (JSON):</p>
         <div class="log-box" id="logBox">等待认证记录...</div>
     </div>
 
-    <!-- 右侧地图容器 -->
+    <!-- 地图容器 -->
     <div id="map"></div>
 
     <script>
-        // 5. 强制页面完全加载后再执行地图代码
-        window.addEventListener('load', function() {
-            console.log("=== 地图初始化开始 ===");
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("初始化地图中...");
 
-            // 6. 初始化Leaflet地图（雅加达中心点）
+            // 1. 初始化地图，中心点设为雅加达
             const map = L.map('map', {
-                center: [-6.2088, 106.8456],
-                zoom: 13,
-                zoomControl: true,
-                attributionControl: true
-            });
+                zoomControl: false // 稍后手动添加在右侧，避免被侧边栏挡住
+            }).setView([-6.2088, 106.8456], 13);
 
-            // 7. 【核心修复】强制加载OpenStreetMap底图（国内可直接访问）
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-                maxZoom: 19
+            // 2. 使用更稳定的 CartoDB Voyager 瓦片源（不需要 Key，且加载速度快）
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap &copy; CARTO',
+                subdomains: 'abcd',
+                maxZoom: 20
             }).addTo(map);
 
-            console.log("=== 底图加载完成 ===");
+            // 将缩放控件添加到右侧
+            L.control.zoom({ position: 'topright' }).addTo(map);
 
-            // 8. 定义A/B/C/D四个认证点（雅加达真实坐标）
-            const points = {
-                A: { name: "A-身份认证点", lat: -6.2088, lng: 106.8456 },
-                B: { name: "B-文化体验点", lat: -6.2100, lng: 106.8500 },
-                C: { name: "C-费用结算点", lat: -6.2050, lng: 106.8400 },
-                D: { name: "D-终点达成点", lat: -6.2120, lng: 106.8350 }
-            };
+            // 3. 定义 A/B/C/D 认证点
+            const points = [
+                { id: 'A', name: "A-身份认证点", lat: -6.2088, lng: 106.8456 },
+                { id: 'B', name: "B-文化体验点", lat: -6.2100, lng: 106.8500 },
+                { id: 'C', name: "C-费用结算点", lat: -6.2050, lng: 106.8400 },
+                { id: 'D', name: "D-终点达成点", lat: -6.2120, lng: 106.8350 }
+            ];
 
-            // 9. 添加标记和轨迹线
             const markers = {};
-            const latlngs = [];
-            Object.keys(points).forEach(key => {
-                const p = points[key];
-                latlngs.push([p.lat, p.lng]);
-                markers[key] = L.marker([p.lat, p.lng]).addTo(map);
-                markers[key].bindPopup(`<b>${p.name}</b>`);
+            const latlngs = points.map(p => [p.lat, p.lng]);
+
+            // 添加标记和轨迹线
+            points.forEach(p => {
+                markers[p.id] = L.marker([p.lat, p.lng]).addTo(map);
+                markers[p.id].bindPopup(`<b>${p.name}</b>`);
             });
 
-            // 绘制A→B→C→D红色轨迹线
-            L.polyline(latlngs, {
-                color: 'red',
-                weight: 3,
-                opacity: 0.8
-            }).addTo(map);
+            L.polyline(latlngs, { color: '#d93025', weight: 4, opacity: 0.7, dashArray: '5, 10' }).addTo(map);
 
-            // 10. 面板交互逻辑
+            // 4. 面板逻辑
             const authBtn = document.getElementById('authBtn');
             const logBox = document.getElementById('logBox');
-            const taskItems = document.querySelectorAll('.task-item');
-            let currentStep = 0;
-            const steps = Object.keys(points);
+            let currentStepIdx = 0;
 
-            // 初始化日志
-            function updateLog(records) {
+            function updateLog() {
+                const records = JSON.parse(localStorage.getItem('tourRecords') || '[]');
+                if (records.length === 0) {
+                    logBox.innerHTML = "等待认证记录...";
+                    return;
+                }
                 logBox.innerHTML = records.map(r => 
-                    `<p>[${r.time}] ${r.step}: ${r.status}</p>`
+                    `<div class="log-entry">
+                        <span style="color: #aaa;">[${r.time.split(' ')[1]}]</span> 
+                        <b style="color: #fff;">${r.step}</b>: ${r.status}
+                    </div>`
                 ).join('');
+                logBox.scrollTop = logBox.scrollHeight;
             }
 
-            // 认证按钮点击事件
             authBtn.addEventListener('click', function() {
-                if (currentStep >= steps.length) return;
-                const stepKey = steps[currentStep];
-                const point = points[stepKey];
+                if (currentStepIdx >= points.length) return;
+
+                const p = points[currentStepIdx];
+                const now = new Date();
                 
-                // 模拟认证记录
                 const record = {
-                    time: new Date().toLocaleString(),
-                    step: stepKey,
-                    status: "认证成功",
-                    lat: point.lat,
-                    lng: point.lng
+                    time: now.toLocaleString(),
+                    step: p.id,
+                    status: "已通过认证",
+                    coords: `${p.lat}, ${p.lng}`
                 };
 
-                // 保存到LocalStorage
+                // 存储
                 const records = JSON.parse(localStorage.getItem('tourRecords') || '[]');
                 records.push(record);
                 localStorage.setItem('tourRecords', JSON.stringify(records));
 
-                // 更新UI
-                taskItems[currentStep].classList.add('active');
-                map.setView([point.lat, point.lng], 15);
-                markers[stepKey].openPopup();
+                // 更新 UI
+                document.getElementById(`step-${p.id}`).classList.add('active');
+                map.flyTo([p.lat, p.lng], 15);
+                markers[p.id].openPopup();
 
-                currentStep++;
-                if(currentStep < steps.length) {
-                    authBtn.textContent = `执行${steps[currentStep]}位置认证`;
+                currentStepIdx++;
+
+                if (currentStepIdx < points.length) {
+                    authBtn.textContent = `执行 ${points[currentStepIdx].id} 位置认证`;
                 } else {
-                    authBtn.textContent = "全部认证完成";
+                    authBtn.textContent = "全部任务已完成 ✓";
                     authBtn.disabled = true;
                 }
-
-                updateLog(records);
+                updateLog();
             });
 
-            // 加载历史记录
-            const history = JSON.parse(localStorage.getItem('tourRecords') || '[]');
-            updateLog(history);
-            history.forEach((r, idx) => {
-                taskItems[idx].classList.add('active');
-            });
-            if(history.length === steps.length) {
-                authBtn.textContent = "全部认证完成";
-                authBtn.disabled = true;
-            }
+            // 初始化：清理旧数据（演示用）并加载
+            localStorage.removeItem('tourRecords'); 
+            updateLog();
 
-            // 11. 强制地图重绘，解决容器渲染问题
-            setTimeout(() => {
-                map.invalidateSize();
-                console.log("=== 地图初始化完成 ===");
-            }, 300);
+            // 解决容器大小变化导致的渲染问题
+            setTimeout(() => { map.invalidateSize(); }, 500);
         });
     </script>
 </body>
