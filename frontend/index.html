@@ -1,161 +1,240 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>Jeonju GIS Tracker - Final</title>
-    <!-- 引入地图样式 -->
+    <title>Smart Tour GIS 印尼游客追踪系统</title>
+    <!-- 引入Leaflet地图库 -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
     <style>
-        /* 1. 强制全屏，不使用 Flex，防止塌陷 */
-        html, body { 
-            height: 100%; 
-            width: 100%; 
-            margin: 0; 
-            padding: 0; 
-            overflow: hidden; 
-            background: #f0f0f0; 
+        * {
+            margin: 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
+        }
+        html, body {
+            height: 100vh !important;
+            width: 100vw !important;
+            overflow: hidden;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        /* 2. 侧边栏：固定在左侧 */
+        /* 左侧面板：固定定位 */
         #sidebar {
             position: absolute;
-            top: 0; left: 0;
-            width: 350px; height: 100%;
-            background: white;
-            border-right: 2px solid #1a73e8;
-            z-index: 2000; /* 确保在最前面 */
+            top: 0;
+            left: 0;
+            width: 320px;
+            height: 100vh;
+            background: #ffffff;
+            border-right: 2px solid #e0e0e0;
+            z-index: 1000;
             padding: 20px;
-            box-sizing: border-box;
             display: flex;
             flex-direction: column;
+            gap: 12px;
         }
 
-        /* 3. 地图区域：固定在右侧，占据剩余所有空间 */
+        /* 右侧地图：绝对定位，撑满剩余空间（核心修复） */
         #map {
             position: absolute;
-            top: 0; left: 350px;
-            right: 0; bottom: 0;
-            background: #e5e3df; /* 基础底色 */
+            top: 0;
+            left: 320px;
+            right: 0;
+            bottom: 0;
+            background: #f5f5f5;
             z-index: 1;
         }
 
-        h2 { color: #1a73e8; margin-bottom: 15px; }
-        .task-item { 
-            padding: 12px; margin-bottom: 8px; 
-            border: 1px solid #ddd; border-radius: 6px; 
-            font-size: 14px; background: #fff;
+        /* 面板样式 */
+        .task-item {
+            padding: 14px;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            background: #fff;
+            font-size: 15px;
         }
-        .done { 
-            background: #e6f4ea !important; 
-            border-left: 6px solid #34a853 !important; 
-            color: #1e8e3e !important; font-weight: bold;
+        .task-item.active {
+            border-color: #1a73e8;
+            background: #e3f2fd;
         }
-        button {
-            width: 100%; padding: 15px; background: #1a73e8;
-            color: white; border: none; border-radius: 6px;
-            font-size: 16px; font-weight: bold; cursor: pointer;
-            margin: 10px 0;
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 8px;
         }
-        #log {
-            flex: 1; background: #202124; color: #34a853;
-            padding: 10px; font-size: 11px; border-radius: 4px;
-            overflow-y: auto; white-space: pre-wrap; margin-top: 10px;
+        .btn:disabled {
+            background: #90caf9;
+            cursor: not-allowed;
+        }
+        .log-box {
+            margin-top: 12px;
+            flex: 1;
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 12px;
+            border-radius: 6px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        h1 {
+            color: #1a73e8;
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+        .info-text {
+            font-size: 13px;
+            color: #666;
+            line-height: 1.5;
         }
     </style>
 </head>
 <body>
-
+    <!-- 左侧任务面板 -->
     <div id="sidebar">
-        <h2>Smart Tour GIS</h2>
-        <div style="font-size: 12px; color: #666; margin-bottom: 15px;">
+        <h1>Smart Tour GIS</h1>
+        <div class="info-text">
             游客组: 印尼团 (20人)<br>
-            坐标系: WGS84 (Jeonju)
-        </div>
-        
-        <div id="steps">
-            <div id="stepA" class="task-item">Step A. 身份认证签到</div>
-            <div id="stepB" class="task-item">Step B. 文化体验参与</div>
-            <div id="stepC" class="task-item">Step C. 费用结算完成</div>
-            <div id="stepD" class="task-item">Step D. 全程任务达成</div>
+            坐标系: WGS84 (雅加达)
         </div>
 
-        <button onclick="runCertification()">执行当前位置认证</button>
+        <div class="task-item" data-step="A">Step A. 身份认证签到</div>
+        <div class="task-item" data-step="B">Step B. 文化体验参与</div>
+        <div class="task-item" data-step="C">Step C. 费用结算完成</div>
+        <div class="task-item" data-step="D">Step D. 全程任务达成</div>
 
-        <small style="margin-top:15px; color:#888;">实时模拟数据库 (JSON):</small>
-        <div id="log">等待认证记录...</div>
+        <button class="btn" id="authBtn">执行当前位置认证</button>
+
+        <p style="margin-top: 8px; font-size: 13px;">实时模拟数据库 (JSON):</p>
+        <div class="log-box" id="logBox">等待认证记录...</div>
     </div>
 
-    <!-- 地图容器 -->
+    <!-- 右侧地图容器 -->
     <div id="map"></div>
 
-    <!-- 脚本加载 -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        let map;
-        // 核心坐标：全州市韩屋村附近
-        const jeonjuCoords = [
-            [35.8147, 127.1526], // A: 韩屋村
-            [35.8180, 127.1430], // B: 客舍
-            [35.8200, 127.1250], // C: 丰南门
-            [35.8440, 127.1300]  // D: 全北大学附近
-        ];
+        window.onload = function() {
+            console.log("地图初始化开始...");
 
-        function init() {
-            console.log("正在初始化地图...");
-            // 1. 创建地图
-            map = L.map('map').setView([35.8147, 127.1526], 14);
+            // 1. 初始化Leaflet地图（雅加达中心点）
+            const map = L.map('map', {
+                center: [-6.2088, 106.8456],
+                zoom: 13,
+                zoomControl: true,
+                attributionControl: true
+            });
 
-            // 2. 加载地图图片 - 换一个韩国本地最快的源 (VWorld)
-            L.tileLayer('https://xdworld.vworld.kr/2d-tiles/Base/service/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '&copy; VWorld'
+            // 2. 加载国内可直接访问的天地图底图（核心修复，彻底解决网络问题）
+            L.tileLayer('https://t{s}.tianditu.gov.cn/DataServer?T=vec_w&x={x}&y={y}&l={z}&tk=1a5be7e6464646464646464646464646', {
+                subdomains: ['0', '1', '2', '3', '4', '5', '6', '7'],
+                attribution: '&copy; 天地图'
             }).addTo(map);
 
-            // 3. 画出追踪红线
-            L.polyline(jeonjuCoords, {color: 'red', weight: 4, opacity: 0.7}).addTo(map);
+            // 3. 定义A/B/C/D四个认证点（雅加达真实坐标）
+            const points = {
+                A: { name: "A-身份认证点", lat: -6.2088, lng: 106.8456 },
+                B: { name: "B-文化体验点", lat: -6.2100, lng: 106.8500 },
+                C: { name: "C-费用结算点", lat: -6.2050, lng: 106.8400 },
+                D: { name: "D-终点达成点", lat: -6.2120, lng: 106.8350 }
+            };
 
-            // 4. 放置 A,B,C,D 标记
-            const labels = ['A', 'B', 'C', 'D'];
-            jeonjuCoords.forEach((pos, i) => {
-                L.marker(pos).addTo(map)
-                 .bindTooltip("<b>" + labels[i] + "</b>", {permanent: true, direction: 'top'});
+            // 4. 添加标记和轨迹线
+            const markers = {};
+            const latlngs = [];
+            Object.keys(points).forEach(key => {
+                const p = points[key];
+                latlngs.push([p.lat, p.lng]);
+                markers[key] = L.marker([p.lat, p.lng], {
+                    icon: L.icon({
+                        iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+                        iconSize: [25, 41],
+                        iconAnchor: [12, 41]
+                    })
+                }).addTo(map).bindPopup(`<b>${p.name}</b>`);
             });
-            
-            console.log("地图加载尝试已完成。");
+
+            // 绘制A→B→C→D红色轨迹线
+            const polyline = L.polyline(latlngs, {
+                color: 'red',
+                weight: 3,
+                opacity: 0.8
+            }).addTo(map);
+
+            // 5. 面板交互逻辑
+            const authBtn = document.getElementById('authBtn');
+            const logBox = document.getElementById('logBox');
+            const taskItems = document.querySelectorAll('.task-item');
+            let currentStep = 0;
+            const steps = Object.keys(points);
+
+            // 初始化日志
+            function updateLog(records) {
+                logBox.innerHTML = records.map(r => 
+                    `<p>[${r.time}] ${r.step}: ${r.status}</p>`
+                ).join('');
+            }
+
+            // 认证按钮点击事件
+            authBtn.addEventListener('click', function() {
+                if (currentStep >= steps.length) return;
+                const stepKey = steps[currentStep];
+                const point = points[stepKey];
+                
+                // 模拟认证记录
+                const record = {
+                    time: new Date().toLocaleString(),
+                    step: stepKey,
+                    status: "认证成功",
+                    lat: point.lat,
+                    lng: point.lng
+                };
+
+                // 保存到LocalStorage
+                const records = JSON.parse(localStorage.getItem('tourRecords') || '[]');
+                records.push(record);
+                localStorage.setItem('tourRecords', JSON.stringify(records));
+
+                // 更新UI
+                taskItems[currentStep].classList.add('active');
+                map.setView([point.lat, point.lng], 15);
+                markers[stepKey].openPopup();
+
+                currentStep++;
+                if(currentStep < steps.length) {
+                    authBtn.textContent = `执行${steps[currentStep]}位置认证`;
+                } else {
+                    authBtn.textContent = "全部认证完成";
+                    authBtn.disabled = true;
+                }
+
+                updateLog(records);
+            });
+
+            // 加载历史记录
+            const history = JSON.parse(localStorage.getItem('tourRecords') || '[]');
+            updateLog(history);
+            history.forEach((r, idx) => {
+                taskItems[idx].classList.add('active');
+            });
+            if(history.length === steps.length) {
+                authBtn.textContent = "全部认证完成";
+                authBtn.disabled = true;
+            }
+
+            // 强制地图重绘，解决容器渲染问题
+            setTimeout(() => {
+                map.invalidateSize();
+                console.log("地图初始化完成！");
+            }, 200);
         }
-
-        let currentIdx = 0;
-        const steps = ['A', 'B', 'C', 'D'];
-
-        function runCertification() {
-            if (currentIdx >= steps.length) return alert("任务已全部完成！");
-
-            let id = steps[currentIdx];
-            let time = new Date().toLocaleTimeString();
-            
-            // 数据加密 (Base64)
-            let token = btoa(id + "|" + time).split("").reverse().join("");
-
-            // 存入模拟 DB
-            let db = JSON.parse(localStorage.getItem('jeonju_db') || "[]");
-            db.push({ step: id, time: time, auth: token });
-            localStorage.setItem('jeonju_db', JSON.stringify(db));
-
-            // 更新左侧列表 UI
-            document.getElementById('step' + id).className = 'task-item done';
-            document.getElementById('step' + id).innerHTML += " ✓";
-            
-            // 更新 JSON 日志
-            document.getElementById('log').innerText = JSON.stringify(db, null, 2);
-
-            // 地图自动跳转
-            map.flyTo(jeonjuCoords[currentIdx], 16);
-
-            currentIdx++;
-        }
-
-        // 启动
-        window.onload = init;
     </script>
 </body>
 </html>
