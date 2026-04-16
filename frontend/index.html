@@ -1,14 +1,14 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Smart Tour GIS 印尼游客追踪系统</title>
-    <!-- 1. 引入 Leaflet 样式和脚本 -->
+    <title>Smart Tour GIS 인도네시아 관광객 추적 시스템</title>
+    <!-- 1. Leaflet 라이브러리 로드 -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
-        /* 2. 基础布局重置 */
+        /* 2. 기초 레이아웃 초기화 */
         * {
             margin: 0;
             padding: 0;
@@ -18,11 +18,11 @@
             height: 100vh;
             width: 100vw;
             overflow: hidden;
-            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
             background: #f0f0f0;
         }
 
-        /* 3. 左侧面板：固定宽度 */
+        /* 3. 왼쪽 패널: 고정 너비 */
         #sidebar {
             position: absolute;
             top: 0;
@@ -39,18 +39,18 @@
             box-shadow: 2px 0 10px rgba(0,0,0,0.1);
         }
 
-        /* 4. 右侧地图：占据剩余空间 */
+        /* 4. 오른쪽 지도: 나머지 공간 차지 */
         #map {
             position: absolute;
             top: 0;
             left: 320px;
             right: 0;
             bottom: 0;
-            background: #e5e3df; /* 地图加载前的背景色 */
+            background: #e5e3df;
             z-index: 1;
         }
 
-        /* 装饰样式 */
+        /* 디자인 스타일 */
         h1 { color: #1a73e8; font-size: 24px; margin-bottom: 4px; }
         .info-text { font-size: 13px; color: #666; line-height: 1.6; margin-bottom: 10px; }
         
@@ -104,55 +104,55 @@
     <div id="sidebar">
         <h1>Smart Tour GIS</h1>
         <div class="info-text">
-            <b>任务对象:</b> 印尼团 (20人)<br>
-            <b>坐标系统:</b> WGS84 (Jakarta)
+            <b>미션 대상:</b> 인도네시아 단체 (20명)<br>
+            <b>좌표 시스템:</b> WGS84 (자카르타)
         </div>
 
-        <div class="task-item" id="step-A">Step A. 身份认证签到</div>
-        <div class="task-item" id="step-B">Step B. 文化体验参与</div>
-        <div class="task-item" id="step-C">Step C. 费用结算完成</div>
-        <div class="task-item" id="step-D">Step D. 全程任务达成</div>
+        <div class="task-item" id="step-A">Step A. 신원 인증 및 체크인</div>
+        <div class="task-item" id="step-B">Step B. 문화 체험 참여</div>
+        <div class="task-item" id="step-C">Step C. 비용 결제 완료</div>
+        <div class="task-item" id="step-D">Step D. 전체 미션 달성</div>
 
-        <button class="btn" id="authBtn">执行 A 位置认证</button>
+        <button class="btn" id="authBtn">Step A 인증 수행</button>
 
-        <p style="margin-top: 10px; font-size: 12px; font-weight: bold; color: #444;">实时数据库模拟 (JSON):</p>
-        <div class="log-box" id="logBox">等待认证记录...</div>
+        <p style="margin-top: 10px; font-size: 12px; font-weight: bold; color: #444;">실시간 데이터베이스 시뮬레이션 (JSON):</p>
+        <div class="log-box" id="logBox">인증 기록 대기 중...</div>
     </div>
 
-    <!-- 地图容器 -->
+    <!-- 지도 컨테이너 -->
     <div id="map"></div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("初始化地图中...");
+            console.log("지도 초기화 중...");
 
-            // 1. 初始化地图，中心点设为雅加达
+            // 1. 지도 초기화 (자카르타 중심점)
             const map = L.map('map', {
-                zoomControl: false // 稍后手动添加在右侧，避免被侧边栏挡住
+                zoomControl: false 
             }).setView([-6.2088, 106.8456], 13);
 
-            // 2. 使用更稳定的 CartoDB Voyager 瓦片源（不需要 Key，且加载速度快）
+            // 2. CartoDB Voyager 타일 레이어 로드
             L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
                 attribution: '&copy; OpenStreetMap &copy; CARTO',
                 subdomains: 'abcd',
                 maxZoom: 20
             }).addTo(map);
 
-            // 将缩放控件添加到右侧
+            // 줌 컨트롤 우측 상단에 추가
             L.control.zoom({ position: 'topright' }).addTo(map);
 
-            // 3. 定义 A/B/C/D 认证点
+            // 3. A/B/C/D 인증 지점 정의
             const points = [
-                { id: 'A', name: "A-身份认证点", lat: -6.2088, lng: 106.8456 },
-                { id: 'B', name: "B-文化体验点", lat: -6.2100, lng: 106.8500 },
-                { id: 'C', name: "C-费用结算点", lat: -6.2050, lng: 106.8400 },
-                { id: 'D', name: "D-终点达成点", lat: -6.2120, lng: 106.8350 }
+                { id: 'A', name: "A-신원 인증 지점", lat: -6.2088, lng: 106.8456 },
+                { id: 'B', name: "B-문화 체험 지점", lat: -6.2100, lng: 106.8500 },
+                { id: 'C', name: "C-비용 결제 지점", lat: -6.2050, lng: 106.8400 },
+                { id: 'D', name: "D-최종 도착 지점", lat: -6.2120, lng: 106.8350 }
             ];
 
             const markers = {};
             const latlngs = points.map(p => [p.lat, p.lng]);
 
-            // 添加标记和轨迹线
+            // 마커 및 경로선 추가
             points.forEach(p => {
                 markers[p.id] = L.marker([p.lat, p.lng]).addTo(map);
                 markers[p.id].bindPopup(`<b>${p.name}</b>`);
@@ -160,7 +160,7 @@
 
             L.polyline(latlngs, { color: '#d93025', weight: 4, opacity: 0.7, dashArray: '5, 10' }).addTo(map);
 
-            // 4. 面板逻辑
+            // 4. 패널 로직
             const authBtn = document.getElementById('authBtn');
             const logBox = document.getElementById('logBox');
             let currentStepIdx = 0;
@@ -168,7 +168,7 @@
             function updateLog() {
                 const records = JSON.parse(localStorage.getItem('tourRecords') || '[]');
                 if (records.length === 0) {
-                    logBox.innerHTML = "等待认证记录...";
+                    logBox.innerHTML = "인증 기록 대기 중...";
                     return;
                 }
                 logBox.innerHTML = records.map(r => 
@@ -189,16 +189,16 @@
                 const record = {
                     time: now.toLocaleString(),
                     step: p.id,
-                    status: "已通过认证",
+                    status: "인증 통과됨",
                     coords: `${p.lat}, ${p.lng}`
                 };
 
-                // 存储
+                // 데이터 저장
                 const records = JSON.parse(localStorage.getItem('tourRecords') || '[]');
                 records.push(record);
                 localStorage.setItem('tourRecords', JSON.stringify(records));
 
-                // 更新 UI
+                // UI 업데이트
                 document.getElementById(`step-${p.id}`).classList.add('active');
                 map.flyTo([p.lat, p.lng], 15);
                 markers[p.id].openPopup();
@@ -206,19 +206,19 @@
                 currentStepIdx++;
 
                 if (currentStepIdx < points.length) {
-                    authBtn.textContent = `执行 ${points[currentStepIdx].id} 位置认证`;
+                    authBtn.textContent = `Step ${points[currentStepIdx].id} 인증 수행`;
                 } else {
-                    authBtn.textContent = "全部任务已完成 ✓";
+                    authBtn.textContent = "모든 미션 완료 ✓";
                     authBtn.disabled = true;
                 }
                 updateLog();
             });
 
-            // 初始化：清理旧数据（演示用）并加载
+            // 초기화: 기존 데이터 삭제(시연용) 및 로그 업데이트
             localStorage.removeItem('tourRecords'); 
             updateLog();
 
-            // 解决容器大小变化导致的渲染问题
+            // 렌더링 오류 방지를 위한 지도 크기 재계산
             setTimeout(() => { map.invalidateSize(); }, 500);
         });
     </script>
