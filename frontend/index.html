@@ -10,93 +10,86 @@
     <style>
         /* 2. 기초 레이아웃 초기화 */
         * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+            margin: 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
         }
         html, body {
-            height: 100vh;
-            width: 100vw;
-            overflow: hidden;
+            height: 100vh !important;
+            width: 100vw !important;
+            overflow: hidden !important;
             font-family: "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
-            background: #f0f0f0;
+            background: #f0f0f0 !important;
         }
 
-        /* 3. 왼쪽 패널: 고정 너비 */
+        /* 3. 왼쪽 패널 */
         #sidebar {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 320px;
-            height: 100vh;
-            background: #ffffff;
-            border-right: 2px solid #e0e0e0;
-            z-index: 1000;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+            position: absolute !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 320px !important;
+            height: 100vh !important;
+            background: #ffffff !important;
+            border-right: 2px solid #e0e0e0 !important;
+            z-index: 1000 !important;
+            padding: 20px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 12px !important;
         }
 
-        /* 4. 오른쪽 지도: 나머지 공간 차지 */
+        /* 4. 오른쪽 지도 */
         #map {
-            position: absolute;
-            top: 0;
-            left: 320px;
-            right: 0;
-            bottom: 0;
-            background: #e5e3df;
-            z-index: 1;
+            position: absolute !important;
+            top: 0 !important;
+            left: 320px !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            background: #e5e3df !important;
+            z-index: 1 !important;
         }
 
-        /* 디자인 스타일 */
-        h1 { color: #1a73e8; font-size: 24px; margin-bottom: 4px; }
-        .info-text { font-size: 13px; color: #666; line-height: 1.6; margin-bottom: 10px; }
+        h1 { color: #1a73e8 !important; font-size: 24px !important; margin-bottom: 4px !important; }
+        .info-text { font-size: 13px !important; color: #666 !important; line-height: 1.6 !important; margin-bottom: 10px !important; }
         
         .task-item {
-            padding: 14px;
-            border: 1px solid #e0e0e0;
-            border-radius: 6px;
-            background: #fff;
-            font-size: 14px;
-            transition: all 0.3s;
+            padding: 14px !important;
+            border: 1px solid #e0e0e0 !important;
+            border-radius: 6px !important;
+            background: #fff !important;
+            font-size: 14px !important;
         }
         .task-item.active {
-            border-left: 5px solid #34a853;
-            background: #f0fff4;
-            color: #2e7d32;
-            font-weight: bold;
+            border-left: 5px solid #34a853 !important;
+            background: #f0fff4 !important;
+            color: #2e7d32 !important;
+            font-weight: bold !important;
         }
 
         .btn {
-            width: 100%;
-            padding: 14px;
-            background: #1a73e8;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 16px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: background 0.2s;
+            width: 100% !important;
+            padding: 14px !important;
+            background: #1a73e8 !important;
+            color: white !important;
+            border: none !important;
+            border-radius: 6px !important;
+            font-size: 16px !important;
+            cursor: pointer !important;
+            font-weight: bold !important;
         }
-        .btn:hover { background: #1557b0; }
-        .btn:disabled { background: #ccc; cursor: not-allowed; }
+        .btn:disabled { background: #ccc !important; cursor: not-allowed !important; }
 
         .log-box {
-            flex: 1;
-            background: #1e1e1e;
-            color: #34a853;
-            padding: 12px;
-            border-radius: 6px;
-            overflow-y: auto;
-            font-family: 'Consolas', monospace;
-            font-size: 12px;
-            margin-top: 10px;
-            border: 1px solid #333;
+            flex: 1 !important;
+            background: #1e1e1e !important;
+            color: #34a853 !important;
+            padding: 12px !important;
+            border-radius: 6px !important;
+            overflow-y: auto !important;
+            font-family: 'Consolas', monospace !important;
+            font-size: 12px !important;
+            margin-top: 10px !important;
         }
-        .log-entry { border-bottom: 1px solid #333; padding: 4px 0; }
     </style>
 </head>
 <body>
@@ -115,44 +108,34 @@
 
         <button class="btn" id="authBtn">Step A 인증 수행</button>
 
-        <p style="margin-top: 10px; font-size: 12px; font-weight: bold; color: #444;">실시간 데이터베이스 시뮬레이션 (JSON):</p>
+        <p style="margin-top: 10px; font-size: 12px; font-weight: bold; color: #444;">실시간 DB 시뮬레이션 (JSON):</p>
         <div class="log-box" id="logBox">인증 기록 대기 중...</div>
     </div>
 
-    <!-- 지도 컨테이너 -->
     <div id="map"></div>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("지도 초기화 중...");
+            // 지도 초기화
+            const map = L.map('map', { zoomControl: false }).setView([-6.2088, 106.8456], 13);
 
-            // 1. 지도 초기화 (자카르타 중심점)
-            const map = L.map('map', {
-                zoomControl: false 
-            }).setView([-6.2088, 106.8456], 13);
-
-            // 2. CartoDB Voyager 타일 레이어 로드
+            // 타일 레이어 (CartoDB)
             L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; OpenStreetMap &copy; CARTO',
-                subdomains: 'abcd',
-                maxZoom: 20
+                attribution: '&copy; OpenStreetMap'
             }).addTo(map);
 
-            // 줌 컨트롤 우측 상단에 추가
             L.control.zoom({ position: 'topright' }).addTo(map);
 
-            // 3. A/B/C/D 인증 지점 정의
             const points = [
                 { id: 'A', name: "A-신원 인증 지점", lat: -6.2088, lng: 106.8456 },
                 { id: 'B', name: "B-문화 체험 지점", lat: -6.2100, lng: 106.8500 },
-                { id: 'C', name: "C-비용 결제 지점", lat: -6.2050, lng: 106.8400 },
+                { id: 'C', name: "C-비용 결제 지点", lat: -6.2050, lng: 106.8400 },
                 { id: 'D', name: "D-최종 도착 지점", lat: -6.2120, lng: 106.8350 }
             ];
 
             const markers = {};
             const latlngs = points.map(p => [p.lat, p.lng]);
 
-            // 마커 및 경로선 추가
             points.forEach(p => {
                 markers[p.id] = L.marker([p.lat, p.lng]).addTo(map);
                 markers[p.id].bindPopup(`<b>${p.name}</b>`);
@@ -160,7 +143,6 @@
 
             L.polyline(latlngs, { color: '#d93025', weight: 4, opacity: 0.7, dashArray: '5, 10' }).addTo(map);
 
-            // 4. 패널 로직
             const authBtn = document.getElementById('authBtn');
             const logBox = document.getElementById('logBox');
             let currentStepIdx = 0;
@@ -172,10 +154,7 @@
                     return;
                 }
                 logBox.innerHTML = records.map(r => 
-                    `<div class="log-entry">
-                        <span style="color: #aaa;">[${r.time.split(' ')[1]}]</span> 
-                        <b style="color: #fff;">${r.step}</b>: ${r.status}
-                    </div>`
+                    `<div><span style="color: #aaa;">[${r.time.split(' ')[1]}]</span> <b style="color: #fff;">${r.step}</b>: ${r.status}</div>`
                 ).join('');
                 logBox.scrollTop = logBox.scrollHeight;
             }
@@ -189,16 +168,14 @@
                 const record = {
                     time: now.toLocaleString(),
                     step: p.id,
-                    status: "인증 통과됨",
+                    status: "인증 통과됨", // 韩文：认证通过
                     coords: `${p.lat}, ${p.lng}`
                 };
 
-                // 데이터 저장
                 const records = JSON.parse(localStorage.getItem('tourRecords') || '[]');
                 records.push(record);
                 localStorage.setItem('tourRecords', JSON.stringify(records));
 
-                // UI 업데이트
                 document.getElementById(`step-${p.id}`).classList.add('active');
                 map.flyTo([p.lat, p.lng], 15);
                 markers[p.id].openPopup();
@@ -214,11 +191,8 @@
                 updateLog();
             });
 
-            // 초기화: 기존 데이터 삭제(시연용) 및 로그 업데이트
             localStorage.removeItem('tourRecords'); 
             updateLog();
-
-            // 렌더링 오류 방지를 위한 지도 크기 재계산
             setTimeout(() => { map.invalidateSize(); }, 500);
         });
     </script>
